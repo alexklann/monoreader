@@ -12,9 +12,6 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
-      fontFamily: {
-        poppins: ['Poppins', 'sans-serif'],
-      },
     },
   },
   plugins: [],
