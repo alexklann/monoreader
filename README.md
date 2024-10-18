@@ -12,8 +12,8 @@
 </p>
 
 # Contents
-- [Installation](https://github.com/alexklann/monoreader/blob/main/README.md#installing-monoreader)
-- [License](https://github.com/alexklann/monoreader/blob/main/README.md#license)
+- [Installation](https://github.com/alexklann/monoreader#installing-monoreader)
+- [License](https://github.com/alexklann/monoreader#license)
 
 ## Installing Monoreader
 To work on the project yourself or run it on your local machine,
