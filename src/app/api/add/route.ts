@@ -9,6 +9,8 @@ export async function POST(request: NextRequest) {
     const name = searchParams.get('name');
     const url = searchParams.get('url');
 
+    console.log(name, url);
+
     if (!name || !url) {
         return NextResponse.json(
             { error: 'Name and URL are required' },
