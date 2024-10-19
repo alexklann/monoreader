@@ -2,6 +2,7 @@
 
 import { Poppins } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
+import AlertItem from "./components/alertItem";
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -31,11 +32,30 @@ export default function Home() {
       console.log(response);
       if (response.ok) {
         showAlert(`Feed "${modalFeedName}" successfully added!`);
-        setFeeds([]);
-        setLoadingFeeds(true);
-        initialized.current = false;
+        updateFeeds();
         resetModal();
     }});
+  }
+
+  // Not too sure what id is at this point
+  async function removeFeed(id: any) {
+    fetch(`/api/remove?id=${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((response) => {
+      console.log(response);
+      if (response.ok) {
+        showAlert(`Feed successfully removed!`);
+        updateFeeds();
+    }});
+  }
+
+  function updateFeeds() {
+    setFeeds([]);
+    setLoadingFeeds(true);
+    initialized.current = false;
   }
 
   function resetModal() {
@@ -79,29 +99,15 @@ export default function Home() {
   return (
     <div className={`h-screen w-screen ${poppins.className}`}>
       <main className="flex flex-col items-center justify-center w-full h-full gap-8">
-        {/* I will changes this to a component in the next commit don't worry lol */}
         {alertVisible && (
-          <div role="alert" className="alert absolute top-0 mt-16 w-[25%]">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              className="stroke-info h-6 w-6 shrink-0">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>{alertMessage}</span>
-          </div>
+          <AlertItem message={alertMessage} />
         )}
         <div className="text-center">
           <h1 className="text-4xl font-extrabold">This will be monoreader!</h1>
           <span>Monoreader will make it easy to bundle all of your favorite RSS channels, like news outlets or blogs!</span>
         </div>
         <a onClick={() => {setOpenFeedModal(true);}} className="btn btn-primary">Add Feed</a>
-        {/* I will changes this to a component in the next commit don't worry lol */}
+        {/* Not too sure on how to make this into a component whilst keeping it's functionality */}
         {openFeedModal && (
           <div className="absolute flex flex-col gap-8 bg-zinc-900 p-8 rounded-lg">
             <span className="font-semibold text-xl">Add a Feed</span>
@@ -121,14 +127,14 @@ export default function Home() {
               </div>
           </div>
         )}
-        {/* I will changes this to a component in the next commit don't worry lol */}
+        {/* Not really a use-case to make these a component for now */}
         {loadingFeeds ? (
           <div className="flex flex-col gap-2 h-fit w-96">
             <span className="font-bold">Feeds:</span>
             <div className="flex flex-col gap-4 h-fit w-full">
-              <div className="skeleton h-32 w-full"></div>
-              <div className="skeleton h-32 w-full"></div>
-              <div className="skeleton h-32 w-full"></div>
+              <div className="skeleton h-20 w-full"></div>
+              <div className="skeleton h-20 w-full"></div>
+              <div className="skeleton h-20 w-full"></div>
             </div>
           </div>
         )
@@ -139,7 +145,14 @@ export default function Home() {
               {feeds.map((feed) => (
                 <div key={feed.id} className="flex flex-col gap-2 h-fit w-full p-4 bg-zinc-900 rounded-xl">
                   {/* Add being able to remove feeds with x-icon and using feed.id */}
-                  <span className="font-semibold">{feed.name}</span>
+                  <div className="flex flex-row items-center">
+                    <span className="font-semibold">{feed.name}</span>
+                    <div className="tooltip ml-auto cursor-pointer" data-tip="Delete this feed" onClick={async () => {await removeFeed(feed.id);}}>
+                      <svg width="20px" height="20px" viewBox="0 -0.5 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6.96967 16.4697C6.67678 16.7626 6.67678 17.2374 6.96967 17.5303C7.26256 17.8232 7.73744 17.8232 8.03033 17.5303L6.96967 16.4697ZM13.0303 12.5303C13.3232 12.2374 13.3232 11.7626 13.0303 11.4697C12.7374 11.1768 12.2626 11.1768 11.9697 11.4697L13.0303 12.5303ZM11.9697 11.4697C11.6768 11.7626 11.6768 12.2374 11.9697 12.5303C12.2626 12.8232 12.7374 12.8232 13.0303 12.5303L11.9697 11.4697ZM18.0303 7.53033C18.3232 7.23744 18.3232 6.76256 18.0303 6.46967C17.7374 6.17678 17.2626 6.17678 16.9697 6.46967L18.0303 7.53033ZM13.0303 11.4697C12.7374 11.1768 12.2626 11.1768 11.9697 11.4697C11.6768 11.7626 11.6768 12.2374 11.9697 12.5303L13.0303 11.4697ZM16.9697 17.5303C17.2626 17.8232 17.7374 17.8232 18.0303 17.5303C18.3232 17.2374 18.3232 16.7626 18.0303 16.4697L16.9697 17.5303ZM11.9697 12.5303C12.2626 12.8232 12.7374 12.8232 13.0303 12.5303C13.3232 12.2374 13.3232 11.7626 13.0303 11.4697L11.9697 12.5303ZM8.03033 6.46967C7.73744 6.17678 7.26256 6.17678 6.96967 6.46967C6.67678 6.76256 6.67678 7.23744 6.96967 7.53033L8.03033 6.46967ZM8.03033 17.5303L13.0303 12.5303L11.9697 11.4697L6.96967 16.4697L8.03033 17.5303ZM13.0303 12.5303L18.0303 7.53033L16.9697 6.46967L11.9697 11.4697L13.0303 12.5303ZM11.9697 12.5303L16.9697 17.5303L18.0303 16.4697L13.0303 11.4697L11.9697 12.5303ZM13.0303 11.4697L8.03033 6.46967L6.96967 7.53033L11.9697 12.5303L13.0303 11.4697Z" fill="#ffffff"/>
+                      </svg>
+                    </div>
+                  </div>
                   <span>{feed.url}</span>
                 </div>
               ))}
