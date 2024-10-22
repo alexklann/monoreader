@@ -10,6 +10,17 @@ const poppins = Poppins({
   weight: ['400', '500', '600', '700', '800', '900'],
 });
 
+interface RSSFeedItem {
+  categories: Array<string>,
+  content: string,
+  contentSnippet: string,
+  guid: string,
+  isoDate: string,
+  link: string
+  pubDate: string,
+  title: string
+}
+
 export default function Home() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -51,6 +62,7 @@ export default function Home() {
       },
     }).then((response) => {
       console.log(response);
+      console.log(response.body);
       if (response.ok) {
         showAlert(`Feed successfully removed!`);
         updateFeeds();
@@ -66,6 +78,8 @@ export default function Home() {
   function resetModal() {
     setModalFeedName("");
     setModalFeedUrl("");
+    setModalCheckSuccess(false);
+    setCheckButtonText("Check");
   }
 
   function showAlert(alertMessage: string) {
@@ -113,16 +127,25 @@ export default function Home() {
       }).then((response) => {
         response.json().then((data) => {
           for (const feed of data.data) {
-            console.log(feed);
-            setFeeds((prevFeeds) => [...prevFeeds, feed]);
+            fetch('/api/fetch?url=' + feed.url, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }).then((response) => {
+              if (response.ok) {
+                response.json().then((data) => {
+                  feed.data = data.data;
+                  setFeeds((prevFeeds) => [...prevFeeds, feed]);
+                });
+              }
+            }) 
           }
-        });
-        if (response.ok) {
           setLoadingFeeds(false);
-        }
-      })
+        });
+      });
     }
-
+    
     if (!initialized.current) {
       fetchFeeds();
       initialized.current = true;
@@ -130,8 +153,8 @@ export default function Home() {
   }, [feeds]);
 
   return (
-    <div className={`h-screen w-screen ${poppins.className}`}>
-      <main className="flex flex-col items-center justify-center w-full h-full gap-8">
+    <div className={`h-full w-full ${poppins.className}`}>
+      <main className="flex flex-col items-center justify-center w-full h-fit gap-8 p-20">
         {alertVisible && (
           <AlertItem message={alertMessage} />
         )}
@@ -142,25 +165,28 @@ export default function Home() {
         <a onClick={() => {setOpenFeedModal(true);}} className="btn btn-primary">Add Feed</a>
         {/* Not too sure on how to make this into a component whilst keeping it's functionality */}
         {openFeedModal && (
-          <div className="absolute flex flex-col gap-8 min-w-[32rem] bg-zinc-900 p-8 rounded-lg z-10">
-            <span className="font-semibold text-xl">Add a Feed</span>
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-col gap-2 w-full font-semibold">
-                  <label>Feed Name</label>
-                  <input value={modalFeedName} onChange={(e) => {setModalFeedName(e.target.value)}} placeholder="My Local Feed" className="input"></input>
-                </div>
-                <div className="flex flex-col gap-2 font-semibold">
-                  <label>Feed Url</label>
-                  <div className="flex flex-row gap-4">
-                    <input value={modalFeedUrl} onChange={(e) => {setModalFeedUrl(e.target.value); setModalCheckSuccess(false); setCheckButtonText("Check");}} placeholder="https://localhost.com/feed" className="input w-full"></input>
-                    <button onClick={async () => {await checkFeed();}} className="btn btn-primary min-w-[6rem]">{checkButtonText}</button>
+          <div className="fixed inset-0 w-full h-full flex flex-col gap-8">
+            <div className="absolute bg-black opacity-75 w-full h-full"></div>
+            <div className="flex flex-col gap-8 mx-auto my-auto w-[28rem] h-fit bg-zinc-900 p-8 rounded-lg z-10">
+              <span className="font-semibold text-xl">Add a Feed</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 w-full font-semibold">
+                    <label>Feed Name</label>
+                    <input value={modalFeedName} onChange={(e) => {setModalFeedName(e.target.value)}} placeholder="My Local Feed" className="input"></input>
+                  </div>
+                  <div className="flex flex-col gap-2 font-semibold">
+                    <label>Feed Url</label>
+                    <div className="flex flex-row gap-4">
+                      <input value={modalFeedUrl} onChange={(e) => {setModalFeedUrl(e.target.value); setModalCheckSuccess(false); setCheckButtonText("Check");}} placeholder="https://localhost.com/feed" className="input w-full"></input>
+                      <button onClick={async () => {await checkFeed();}} className="btn btn-primary min-w-[6rem]">{checkButtonText}</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-2 ml-auto w-fit">
-                <button onClick={() => {resetModal(); setOpenFeedModal(false);}} className="btn btn-outline">Cancel</button>
-                <button onClick={async () => {await addFeed();}} className="btn btn-primary" disabled={!modalCheckSuccess}>Add</button>
-              </div>
+                <div className="flex gap-2 ml-auto w-fit">
+                  <button onClick={() => {resetModal(); setOpenFeedModal(false);}} className="btn btn-outline">Cancel</button>
+                  <button onClick={async () => {await addFeed();}} className="btn btn-primary" disabled={!modalCheckSuccess}>Add</button>
+                </div>
+            </div>
           </div>
         )}
         {/* Not really a use-case to make these a component for now */}
@@ -175,11 +201,25 @@ export default function Home() {
           </div>
         )
         : (
-          <div className="flex flex-col gap-2 h-fit w-96">
+          <div className="flex flex-col gap-2 h-fit w-[38rem]">
             <span className="font-bold">Feeds:</span>
+            {feeds.length === 0 && (
+              <div className="w-full flex justify-center mt-36">
+                  <span>No feeds found</span>
+              </div>
+            )}
             <div className="flex flex-col gap-4 h-fit w-full">
               {feeds.map((feed) => (
-                <FeedItem key={feed.id} feed={feed} onRemoveFeed={async () => {await removeFeed(feed.id)}}/>
+                <div key={feed.id} className="flex flex-col gap-2">
+                  <FeedItem feed={feed} onRemoveFeed={async () => {await removeFeed(feed.id)}}/>
+                  <div className="flex flex-col gap-2 w-full h-fit pr-8">
+                    {feed.data.items.map((item: RSSFeedItem) => (
+                      <div key={item.guid} className="flex flex-col w-full h-fit bg-zinc-900 p-4 rounded-lg">
+                        <span>{item.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
