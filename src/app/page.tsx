@@ -3,7 +3,8 @@
 import { Poppins } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
 import AlertItem from "./components/alertItem";
-import FeedItem from "./components/feedItem";
+import Image from "next/image";
+// import FeedItem from "./components/feedItem";
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function Home() {
 
   const [openFeedModal, setOpenFeedModal] = useState(false);
   const [modalFeedName, setModalFeedName] = useState("");
+  const [modalFeedImage, setModalFeedImage] = useState("");
   const [modalFeedUrl, setModalFeedUrl] = useState("");
   const [modalCheckSuccess, setModalCheckSuccess] = useState(false);
 
@@ -38,7 +40,7 @@ export default function Home() {
   const initialized = useRef(false);
 
   async function addFeed() {
-    fetch(`/api/add?name=${modalFeedName}&url=${modalFeedUrl}`, {
+    fetch(`/api/add?name=${modalFeedName}&url=${modalFeedUrl}&image=${modalFeedImage}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -54,7 +56,7 @@ export default function Home() {
   }
 
   // Not too sure what id is at this point
-  async function removeFeed(id: any) {
+  /*async function removeFeed(id: any) {
     fetch(`/api/remove?id=${id}`, {
       method: "DELETE",
       headers: {
@@ -67,7 +69,7 @@ export default function Home() {
         showAlert(`Feed successfully removed!`);
         updateFeeds();
     }});
-  }
+  }*/
 
   function updateFeeds() {
     setFeeds([]);
@@ -136,6 +138,7 @@ export default function Home() {
               if (response.ok) {
                 response.json().then((data) => {
                   feed.data = data.data;
+                  console.log(feed);
                   setFeeds((prevFeeds) => [...prevFeeds, feed]);
                 });
               }
@@ -170,9 +173,13 @@ export default function Home() {
             <div className="flex flex-col gap-8 mx-auto my-auto w-[28rem] h-fit bg-zinc-900 p-8 rounded-lg z-10">
               <span className="font-semibold text-xl">Add a Feed</span>
               <div className="flex flex-col gap-2">
-                <div className="flex flex-col gap-2 w-full font-semibold">
+                  <div className="flex flex-col gap-2 w-full font-semibold">
                     <label>Feed Name</label>
                     <input value={modalFeedName} onChange={(e) => {setModalFeedName(e.target.value)}} placeholder="My Local Feed" className="input"></input>
+                  </div>
+                  <div className="flex flex-col gap-2 w-full font-semibold">
+                    <label>Image</label>
+                    <input value={modalFeedImage} onChange={(e) => {setModalFeedImage(e.target.value)}} placeholder="https://localhost.com/image.png" className="input"></input>
                   </div>
                   <div className="flex flex-col gap-2 font-semibold">
                     <label>Feed Url</label>
@@ -202,7 +209,6 @@ export default function Home() {
         )
         : (
           <div className="flex flex-col gap-2 h-fit w-[38rem]">
-            <span className="font-bold">Feeds:</span>
             {feeds.length === 0 && (
               <div className="w-full flex justify-center mt-36">
                   <span>No feeds found</span>
@@ -211,12 +217,20 @@ export default function Home() {
             <div className="flex flex-col gap-4 h-fit w-full">
               {feeds.map((feed) => (
                 <div key={feed.id} className="flex flex-col gap-2">
-                  <FeedItem feed={feed} onRemoveFeed={async () => {await removeFeed(feed.id)}}/>
                   <div className="flex flex-col gap-2 w-full h-fit pr-8">
                     {feed.data.items.map((item: RSSFeedItem) => (
-                      <div key={item.guid} className="flex flex-col w-full h-fit bg-zinc-900 p-4 rounded-lg">
-                        <span>{item.title}</span>
-                      </div>
+                      <a key={item.guid} href={item.link}>
+                        <div className="flex flex-col gap-2 w-full h-fit justify-center bg-zinc-900 p-4 rounded-lg">
+                          <div className="flex flex-row gap-4 items-center">
+                            {feed.image != "" && (
+                              <Image src={feed.image} alt={`${feed.name} Logo`} width={32} height={32}/>
+                            )}
+                            <span className="font-bold text-lg">{feed.name}</span>
+                          </div>
+                          <span>{item.title}</span>
+                          <span>{new Date(item.isoDate).toLocaleString('de-DE')}</span>
+                        </div>
+                      </a>
                     ))}
                   </div>
                 </div>

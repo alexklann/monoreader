@@ -6,7 +6,7 @@ const databasePath = path.resolve(process.cwd(), 'monoreader.sqlite');
 
 export async function POST() {
     const database = new sqlite3.Database(databasePath);
-    database.run("CREATE TABLE IF NOT EXISTS feeds (id INTEGER PRIMARY KEY, name TEXT, url TEXT, updated INTEGER)");
+    database.run("CREATE TABLE IF NOT EXISTS feeds (id INTEGER PRIMARY KEY, name TEXT, url TEXT, image TEXT, updated INTEGER)");
     database.close();
 
     return NextResponse.json(
