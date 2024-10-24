@@ -40,7 +40,7 @@ export default function Home() {
   const initialized = useRef(false);
 
   async function addFeed() {
-    fetch(`/api/add?name=${modalFeedName}&url=${modalFeedUrl}&image=${modalFeedImage}`, {
+    fetch(`/api/feed?name=${modalFeedName}&url=${modalFeedUrl}&image=${modalFeedImage}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -121,7 +121,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchFeeds = async () => {
-      fetch("/api/list", {
+      fetch("/api/feed", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
