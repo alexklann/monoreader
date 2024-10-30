@@ -4,18 +4,26 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function GET() {
-    await prisma.feeds.findMany().then((feeds) => {
+    const feeds = await prisma.feeds.findMany();
+
+    if (feeds.length > 0) {
         const modifiedFeeds = feeds.map(feed => {
             if (feed.image === null) {
                 feed.image = "";
             }
             return feed;
         });
+
         return NextResponse.json(
             { data: modifiedFeeds },
             { status: 200 },
         );
-    });
+    } else {
+        return NextResponse.json({
+            message: "No feeds found",
+            status: 404,
+        });
+    }
 }
 
 export async function POST(request: NextRequest) {
@@ -23,9 +31,7 @@ export async function POST(request: NextRequest) {
     const name = searchParams.get('name');
     const image = searchParams.get('image') || "";
     const url = searchParams.get('url');
-
-    console.log(name, url);
-
+    
     if (!name || !url) {
         return NextResponse.json(
             { error: 'Name and URL are required' },

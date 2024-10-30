@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const fetchedFeed = await fetchRSS(decodeURIComponent(rssURL));
     return NextResponse.json(
       { data: fetchedFeed },
+      { status: 200 },
     );
   } catch (error) {
     return NextResponse.json(

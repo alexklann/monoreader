@@ -14,11 +14,12 @@ datasource db {
 }
 
 model feeds {
-  id      Int      @id @default(autoincrement())
-  name    String
-  url     String
-  image   String
-  updated DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  name           String
+  url            String
+  image          String
+  updateInterval Int      @default(5) // in minutes
+  updated        DateTime @default(now())
 }
 
 model rss_articles {
