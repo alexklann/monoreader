@@ -1,43 +1,27 @@
 import { NextResponse, NextRequest } from "next/server";
-import path from "path";
-import sqlite3 from "sqlite3";
+import { PrismaClient } from "@prisma/client";
 
-const databasePath = path.resolve(process.cwd(), 'monoreader.sqlite');
-
-interface FeedRow {
-    id: number;
-    title: string;
-    description: string;
-    link: string;
-    image: string | null;
-}
+const prisma = new PrismaClient();
 
 export async function GET() {
-    return new Promise((resolve, reject) => {
-        const database = new sqlite3.Database(databasePath);
-        database.all("SELECT * FROM feeds", (error, rows: FeedRow[]) => {
-            database.close();
-            if (error) {
-                reject(error);
-            } else {
-                const modifiedRows = rows.map(row => {
-                    if (row.image === null) {
-                        row.image = "";
-                    }
-                    return row;
-                });
-                resolve(NextResponse.json(
-                    { data: modifiedRows },
-                ));
+    await prisma.feeds.findMany().then((feeds) => {
+        const modifiedFeeds = feeds.map(feed => {
+            if (feed.image === null) {
+                feed.image = "";
             }
+            return feed;
         });
+        return NextResponse.json(
+            { data: modifiedFeeds },
+            { status: 200 },
+        );
     });
 }
 
 export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const name = searchParams.get('name');
-    const image = searchParams.get('image');
+    const image = searchParams.get('image') || "";
     const url = searchParams.get('url');
 
     console.log(name, url);
@@ -49,11 +33,14 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // Can't use API route since this is the server-side
-    // TO DO: Need a better idea to do this 
-    const database = new sqlite3.Database(databasePath);
-    database.run("INSERT INTO feeds (name, url, image, updated) VALUES (?, ?, ?, ?)", [name, url, image, Date.now()]);
-    database.close();
+    await prisma.feeds.create({
+        data: {
+            name: name,
+            url: url,
+            image: image || "",
+        }
+    });
+    await prisma.$disconnect();
 
     return NextResponse.json(
         { message: 'Added feed' },
@@ -62,28 +49,25 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    return new Promise((resolve, reject) => {
-        const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
 
-        if (!id) {
-            return NextResponse.json(
-                { error: 'ID is required' },
-                { status: 400 },
-            );
+    if (!id) {
+        return NextResponse.json(
+            { error: 'ID is required' },
+            { status: 400 },
+        );
+    }
+
+    await prisma.feeds.delete({
+        where: {
+            id: parseInt(id),
         }
-
-        const database = new sqlite3.Database(databasePath);
-        database.run("DELETE FROM feeds WHERE id = ?", [id], (error) => {
-            database.close();
-            if (error) {
-                reject(error);
-            } else {
-                resolve(NextResponse.json(
-                    { message: 'Deleted feed' },
-                    { status: 200 },
-                ));
-            }
-        });
     });
+    await prisma.$disconnect();
+
+    return NextResponse.json(
+        { message: 'Deleted feed' },
+        { status : 200 },
+    );
 }

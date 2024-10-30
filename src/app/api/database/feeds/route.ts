@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "path";
-import sqlite3 from "sqlite3";
-
-const databasePath = path.resolve(process.cwd(), 'monoreader.sqlite');
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
     const body = await request.json();
@@ -17,9 +15,15 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    const database = new sqlite3.Database(databasePath);
-    database.run("INSERT INTO feeds (name, url, image, updated) VALUES (?, ?, ?, ?)", [body.name, body.url, body.image, Date.now()]);
-    database.close();
+    await prisma.feeds.create({
+        data: {
+            name: body.name,
+            url: body.url,
+            image: body.image,
+        }
+    });
+
+    await prisma.$disconnect();
 
     return NextResponse.json(
         { message: 'Added feed' },
