@@ -33,6 +33,7 @@ async function addFeedDataToDatabase(url: string) {
         if (existingItem === null) {
             await prisma.rss_articles.create({
                 data: {
+                    feed_image: feedData.image?.url || "",
                     feed_url: url,
                     title: item.title || "",
                     link: item.link || "",

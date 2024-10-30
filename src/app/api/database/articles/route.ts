@@ -13,6 +13,21 @@ interface Article {
     guid: string,
 }
 
+export async function GET() {
+    const articles = await prisma.rss_articles.findMany({
+        take: 200,
+        orderBy: {
+            created_at: "asc"
+        }
+    });
+
+    await prisma.$disconnect();
+    return NextResponse.json({
+        data: articles,
+        status: 200,
+    })
+}
+
 /**
  * POST request to add articles to the database
  * @param request 

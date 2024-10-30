@@ -4,7 +4,6 @@ import { Poppins } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
 import AlertItem from "./components/alertItem";
 import Image from "next/image";
-// import FeedItem from "./components/feedItem";
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -12,14 +11,16 @@ const poppins = Poppins({
 });
 
 interface RSSFeedItem {
-  categories: Array<string>,
+  id: number,
+  feed_image: string,
+  feed_url: string,
+  title: string,
+  link: string,
+  pub_date: string,
+  description: string,
   content: string,
-  contentSnippet: string,
   guid: string,
-  isoDate: string,
-  link: string
-  pubDate: string,
-  title: string
+  created_at: string,
 }
 
 export default function Home() {
@@ -54,22 +55,6 @@ export default function Home() {
         resetModal();
     }});
   }
-
-  // Not too sure what id is at this point
-  /*async function removeFeed(id: any) {
-    fetch(`/api/remove?id=${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then((response) => {
-      console.log(response);
-      console.log(response.body);
-      if (response.ok) {
-        showAlert(`Feed successfully removed!`);
-        updateFeeds();
-    }});
-  }*/
 
   function updateFeeds() {
     setFeeds([]);
@@ -121,31 +106,16 @@ export default function Home() {
 
   useEffect(() => {
     const fetchFeeds = async () => {
-      fetch("/api/feed/", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((response) => {
-        response.json().then((data) => {
-          for (const feed of data.data) {
-            fetch('/api/fetch?url=' + feed.url, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }).then((response) => {
-              if (response.ok) {
-                response.json().then((data) => {
-                  feed.data = data.data;
-                  console.log(feed);
-                  setFeeds((prevFeeds) => [...prevFeeds, feed]);
-                });
-              }
-            }) 
-          }
-          setLoadingFeeds(false);
-        });
+      fetch("/api/database/articles").then((response) => {
+        if (response.ok) {
+          response.json().then((data) => {
+            console.log(data.data);
+            setFeeds(data.data);
+            setLoadingFeeds(false);
+          });
+        } else {
+          showAlert("Failed to fetch feeds");
+        }
       });
     }
     
@@ -215,25 +185,18 @@ export default function Home() {
               </div>
             )}
             <div className="flex flex-col gap-4 h-fit w-full">
-              {feeds.map((feed) => (
-                <div key={feed.id} className="flex flex-col gap-2">
-                  <div className="flex flex-col gap-2 w-full h-fit pr-8">
-                    {feed.data.items.map((item: RSSFeedItem) => (
-                      <a key={item.guid} href={item.link}>
-                        <div className="flex flex-col gap-2 w-full h-fit justify-center bg-zinc-900 p-4 rounded-lg">
-                          <div className="flex flex-row gap-4 items-center">
-                            {feed.image != "" && (
-                              <Image src={feed.image} alt={`${feed.name} Logo`} width={32} height={32}/>
-                            )}
-                            <span className="font-bold text-lg">{feed.name}</span>
-                          </div>
-                          <span>{item.title}</span>
-                          <span>{new Date(item.isoDate).toLocaleString('de-DE')}</span>
-                        </div>
-                      </a>
-                    ))}
+              {feeds.map((item: RSSFeedItem) => (
+                <a key={item.guid} href={item.link}>
+                  <div className="flex flex-col gap-2 w-full h-fit justify-center bg-zinc-900 p-4 rounded-lg">
+                    <div className="flex flex-row gap-4 items-center">
+                      {item.feed_image !== "" &&
+                        <Image src={item.feed_image} alt="Feed Logo" width={32} height={32}/>
+                      }
+                      <span className="font-bold text-lg">{item.title}</span>
+                    </div>
+                    <span>{new Date(item.pub_date).toLocaleString('de-DE')}</span>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </div>

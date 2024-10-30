@@ -24,6 +24,7 @@ model feeds {
 
 model rss_articles {
   id          Int      @id @default(autoincrement())
+  feed_image  String   @default("") // For the time being; Don't know how to relate this to feeds
   feed_url    String
   title       String
   link        String
