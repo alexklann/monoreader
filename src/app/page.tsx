@@ -12,12 +12,20 @@ const poppins = Poppins({
 
 interface RSSFeedItem {
   id: number,
-  feed_image: string,
-  feed_url: string,
+  feed_id: number,
+  feed: {
+    id: number,
+    name: string,
+    url: string,
+    image: string,
+    updateInterval: number,
+    updated: Date,
+    rss_articles: RSSFeedItem[],
+  }
   title: string,
   link: string,
   pub_date: string,
-  description: string,
+  contentSnippet: string,
   content: string,
   guid: string,
   created_at: string,
@@ -110,6 +118,9 @@ export default function Home() {
         if (response.ok) {
           response.json().then((data) => {
             console.log(data.data);
+            data.data.sort((a: RSSFeedItem, b: RSSFeedItem) => {
+              return new Date(b.pub_date).getTime() - new Date(a.pub_date).getTime();
+            });
             setFeeds(data.data);
             setLoadingFeeds(false);
           });
@@ -186,14 +197,15 @@ export default function Home() {
             )}
             <div className="flex flex-col gap-4 h-fit w-full">
               {feeds.map((item: RSSFeedItem) => (
-                <a key={item.guid} href={item.link}>
+                <a key={item.link} href={item.link}>
                   <div className="flex flex-col gap-2 w-full h-fit justify-center bg-zinc-900 p-4 rounded-lg">
                     <div className="flex flex-row gap-4 items-center">
-                      {item.feed_image !== "" &&
-                        <Image src={item.feed_image} alt="Feed Logo" width={32} height={32}/>
+                      {item.feed.image !== "" &&
+                        <Image src={item.feed.image} alt="Feed Logo" width={32} height={32}/>
                       }
                       <span className="font-bold text-lg">{item.title}</span>
                     </div>
+                    <span className="">{item.contentSnippet.substring(0, 120)}{item.contentSnippet.length > 120 ? "..." : ""}</span>
                     <span>{new Date(item.pub_date).toLocaleString('de-DE')}</span>
                   </div>
                 </a>

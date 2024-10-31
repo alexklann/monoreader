@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 interface Article {
-    feed_url: string,
+    feed_id: number,
     title: string,
     link: string,
     pub_date: string,
@@ -18,6 +18,9 @@ export async function GET() {
         take: 200,
         orderBy: {
             created_at: "asc"
+        },
+        include: {
+            feed: true
         }
     });
 
@@ -49,11 +52,11 @@ export async function POST(request: NextRequest) {
 
         await prisma.rss_articles.create({
             data: {
-                feed_url: article.feed_url,
+                feed_id: article.feed_id,
                 title: article.title,
                 link: article.link,
                 pub_date: article.pub_date,
-                description: article.description,
+                contentSnippet: article.description,
                 content: article.content,
                 guid: article.guid,
             }

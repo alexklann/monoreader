@@ -23,6 +23,17 @@ async function addFeedDataToDatabase(url: string) {
     const feedData = await getFeedData(url);
     const feedItems = feedData.items;
 
+    const feedId = await prisma.feeds.findFirst({
+        where: {
+            url: feedData.link,
+        }
+    });
+
+    if (feedId === null) {
+        console.warn(`Feed ID not found for URL: ${feedData.link}`);
+        return;
+    }
+
     for (const item of feedItems) {
         const existingItem = await prisma.rss_articles.findFirst({
             where: {
@@ -33,12 +44,11 @@ async function addFeedDataToDatabase(url: string) {
         if (existingItem === null) {
             await prisma.rss_articles.create({
                 data: {
-                    feed_image: feedData.image?.url || "",
-                    feed_url: url,
+                    feed_id: feedId.id,
                     title: item.title || "",
                     link: item.link || "",
                     pub_date: item.pubDate || "",
-                    description: item.description || "",
+                    contentSnippet: item.contentSnippet || "",
                     content: item.content || "",
                     guid: item.guid || "",
                 }
