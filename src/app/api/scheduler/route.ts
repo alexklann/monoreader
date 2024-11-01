@@ -19,20 +19,9 @@ async function getFeedData(url: string) {
     return feed;
 }
 
-async function addFeedDataToDatabase(url: string) {
+async function addFeedDataToDatabase(url: string, id: number) {
     const feedData = await getFeedData(url);
     const feedItems = feedData.items;
-
-    const feedId = await prisma.feeds.findFirst({
-        where: {
-            url: feedData.link,
-        }
-    });
-
-    if (feedId === null) {
-        console.warn(`Feed ID not found for URL: ${feedData.link}`);
-        return;
-    }
 
     for (const item of feedItems) {
         const existingItem = await prisma.rss_articles.findFirst({
@@ -44,7 +33,7 @@ async function addFeedDataToDatabase(url: string) {
         if (existingItem === null) {
             await prisma.rss_articles.create({
                 data: {
-                    feed_id: feedId.id,
+                    feed_id: id,
                     title: item.title || "",
                     link: item.link || "",
                     pub_date: item.pubDate || "",
@@ -80,6 +69,7 @@ export async function POST() {
     const feeds = await getAllFeeds();
     for (const feed of feeds) {
         const feedName = feed.name;
+        const feedId = feed.id;
         
         try {
             taskScheduler.removeById(feedName);
@@ -91,7 +81,7 @@ export async function POST() {
 
         const newTask = new Task(
             feedName,
-            () => addFeedDataToDatabase(feed.url),
+            () => addFeedDataToDatabase(feed.url, feedId),
         );
 
         const intervalJob = new SimpleIntervalJob(
