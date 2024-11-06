@@ -19,6 +19,32 @@ async function getFeedData(url: string) {
     return feed;
 }
 
+async function createFeedTask(feed: any) {
+    const feedName = feed.name;
+    const feedId = feed.id;
+    
+    try {
+        taskScheduler.removeById(feedName);
+    } catch {
+        console.warn(`No existing job with ID: ${feedName} to remove.`);
+    }
+
+    console.log(`Adding feed: ${feedName}`);
+
+    const newTask = new Task(
+        feedName,
+        () => addFeedDataToDatabase(feed.url, feedId),
+    );
+
+    const intervalJob = new SimpleIntervalJob(
+        { minutes: 5, runImmediately: true },
+        newTask,
+        { id: feedName }
+    );
+
+    taskScheduler.addSimpleIntervalJob(intervalJob);
+}
+
 async function addFeedDataToDatabase(url: string, id: number) {
     const feedData = await getFeedData(url);
     const feedItems = feedData.items;
@@ -68,29 +94,7 @@ export async function POST() {
 
     const feeds = await getAllFeeds();
     for (const feed of feeds) {
-        const feedName = feed.name;
-        const feedId = feed.id;
-        
-        try {
-            taskScheduler.removeById(feedName);
-        } catch {
-            console.warn(`No existing job with ID: ${feedName} to remove.`);
-        }
-
-        console.log(`Adding feed: ${feedName}`);
-
-        const newTask = new Task(
-            feedName,
-            () => addFeedDataToDatabase(feed.url, feedId),
-        );
-
-        const intervalJob = new SimpleIntervalJob(
-            { minutes: 5, runImmediately: true },
-            newTask,
-            { id: feedName }
-        );
-
-        taskScheduler.addSimpleIntervalJob(intervalJob);
+        await createFeedTask(feed);
     }
 
     return NextResponse.json({

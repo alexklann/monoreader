@@ -17,7 +17,7 @@ export async function GET() {
     const articles = await prisma.rss_articles.findMany({
         take: 200,
         orderBy: {
-            created_at: "asc"
+            created_at: "desc"
         },
         include: {
             feed: true

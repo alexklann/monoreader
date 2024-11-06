@@ -3,7 +3,7 @@
 import { Poppins } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
 import AlertItem from "./components/alertItem";
-import Image from "next/image";
+import Article from "./components/article";
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -36,10 +36,13 @@ export default function Home() {
   const [alertMessage, setAlertMessage] = useState("");
 
   const [openFeedModal, setOpenFeedModal] = useState(false);
-  const [modalFeedName, setModalFeedName] = useState("");
-  const [modalFeedImage, setModalFeedImage] = useState("");
-  const [modalFeedUrl, setModalFeedUrl] = useState("");
   const [modalCheckSuccess, setModalCheckSuccess] = useState(false);
+
+  const [RSSModalData, setRSSModalData] = useState({
+    feedName: "",
+    feedImage: "",
+    feedUrl: "",
+  });
 
   const [loadingFeeds, setLoadingFeeds] = useState(true);
   const [feeds, setFeeds] = useState<any[]>([]);
@@ -49,7 +52,7 @@ export default function Home() {
   const initialized = useRef(false);
 
   async function addFeed() {
-    fetch(`/api/feed?name=${modalFeedName}&url=${modalFeedUrl}&image=${modalFeedImage}`, {
+    fetch(`/api/feed?name=${RSSModalData.feedName}&url=${RSSModalData.feedUrl}&image=${RSSModalData.feedImage}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -57,7 +60,7 @@ export default function Home() {
     }).then((response) => {
       console.log(response);
       if (response.ok) {
-        showAlert(`Feed "${modalFeedName}" successfully added!`);
+        showAlert(`Feed "${RSSModalData.feedName}" successfully added!`);
         updateFeeds();
         setOpenFeedModal(false);
         resetModal();
@@ -71,8 +74,11 @@ export default function Home() {
   }
 
   function resetModal() {
-    setModalFeedName("");
-    setModalFeedUrl("");
+    setRSSModalData({
+      feedName: "",
+      feedImage: "",
+      feedUrl: "",
+    });
     setModalCheckSuccess(false);
     setCheckButtonText("Check");
   }
@@ -88,7 +94,7 @@ export default function Home() {
   async function checkFeed() {
     setCheckButtonText(<span className="loading loading-spinner loading-xs"></span>);
 
-    fetch(`/api/fetch?url=${modalFeedUrl}`, {
+    fetch(`/api/fetch?url=${RSSModalData.feedUrl}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -138,14 +144,10 @@ export default function Home() {
 
   return (
     <div className={`h-full w-full ${poppins.className}`}>
-      <main className="flex flex-col items-center justify-center w-full h-fit gap-8 p-20">
+      <main className="flex flex-col items-center justify-center w-full h-fit gap-8 md-p-20 p-8">
         {alertVisible && (
           <AlertItem message={alertMessage} />
         )}
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold">This will be monoreader!</h1>
-          <span>Monoreader will make it easy to bundle all of your favorite RSS channels, like news outlets or blogs!</span>
-        </div>
         <a onClick={() => {setOpenFeedModal(true);}} className="btn btn-primary">Add Feed</a>
         {/* Not too sure on how to make this into a component whilst keeping it's functionality */}
         {openFeedModal && (
@@ -156,16 +158,16 @@ export default function Home() {
               <div className="flex flex-col gap-2">
                   <div className="flex flex-col gap-2 w-full font-semibold">
                     <label>Feed Name</label>
-                    <input value={modalFeedName} onChange={(e) => {setModalFeedName(e.target.value)}} placeholder="My Local Feed" className="input"></input>
+                    <input value={RSSModalData.feedName} onChange={(e) => {setRSSModalData((prevState) => ({ ...prevState, feedName: e.target.value }))}} placeholder="My Local Feed" className="input"></input>
                   </div>
                   <div className="flex flex-col gap-2 w-full font-semibold">
                     <label>Image</label>
-                    <input value={modalFeedImage} onChange={(e) => {setModalFeedImage(e.target.value)}} placeholder="https://localhost.com/image.png" className="input"></input>
+                    <input value={RSSModalData.feedImage} onChange={(e) => {setRSSModalData((prevState) => ({ ...prevState, feedImage: e.target.value }))}} placeholder="https://localhost.com/image.png" className="input"></input>
                   </div>
                   <div className="flex flex-col gap-2 font-semibold">
                     <label>Feed Url</label>
                     <div className="flex flex-row gap-4">
-                      <input value={modalFeedUrl} onChange={(e) => {setModalFeedUrl(e.target.value); setModalCheckSuccess(false); setCheckButtonText("Check");}} placeholder="https://localhost.com/feed" className="input w-full"></input>
+                      <input value={RSSModalData.feedUrl} onChange={(e) => {setRSSModalData((prevState) => ({ ...prevState, feedUrl: e.target.value })); setModalCheckSuccess(false); setCheckButtonText("Check");}} placeholder="https://localhost.com/feed" className="input w-full"></input>
                       <button onClick={async () => {await checkFeed();}} className="btn btn-primary min-w-[6rem]">{checkButtonText}</button>
                     </div>
                   </div>
@@ -189,26 +191,15 @@ export default function Home() {
           </div>
         )
         : (
-          <div className="flex flex-col gap-2 h-fit w-[38rem]">
+          <div className="flex flex-col gap-2 h-fit md-w-[38rem] w-full">
             {feeds.length === 0 && (
               <div className="w-full flex justify-center mt-36">
                   <span>No feeds found</span>
               </div>
             )}
             <div className="flex flex-col gap-4 h-fit w-full">
-              {feeds.map((item: RSSFeedItem) => (
-                <a key={item.link} href={item.link}>
-                  <div className="flex flex-col gap-2 w-full h-fit justify-center bg-zinc-900 p-4 rounded-lg">
-                    <div className="flex flex-row gap-4 items-center">
-                      {item.feed.image !== "" &&
-                        <Image src={item.feed.image} alt="Feed Logo" width={32} height={32}/>
-                      }
-                      <span className="font-bold text-lg">{item.title}</span>
-                    </div>
-                    <span className="">{item.contentSnippet.substring(0, 120)}{item.contentSnippet.length > 120 ? "..." : ""}</span>
-                    <span>{new Date(item.pub_date).toLocaleString('de-DE')}</span>
-                  </div>
-                </a>
+              {feeds.map((feed: RSSFeedItem) => (
+                <Article key={feed.guid} feed={feed} />
               ))}
             </div>
           </div>
